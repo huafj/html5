@@ -24,8 +24,8 @@
 		<form action="/statics/demosource/demo-form.php">
 			<label>任务</label>
 			<input type="text" id="task" value=""><br>
-			<label for="female">天数</label>
-			<input type="text" id="days" value=""><br><br>
+			<label>天数</label>
+			<input type="number" id="days" value=""><br><br>
 			<center>
 				<input type="button" value="创建" OnClick="OnCreateObj()">
 				<input type="button" value="更新" OnClick="OnUpdateObj()">
@@ -70,6 +70,7 @@
 					if(loc.x>=x && loc.x <= x+width){
 							objSelected = i;
 							document.getElementById("task").value = objs[i].title;
+						  document.getElementById("days").value = objs[i].days;
 							break;
 					}						 
 			}
@@ -80,7 +81,7 @@
 					return;
   		}
 			let obj = objs[objSelected];
-			obj.Add = val;
+			obj.add = val;
 			let dbParam = JSON.stringify(obj);
 			let selected = objSelected;
       objSelected = -1;
@@ -93,6 +94,7 @@
 							let ctx = canvas.getContext("2d");
 							let obj = JSON.parse(this.responseText);
 							objs[selected] = obj;
+							console.log("obj.add="+obj.add+" "+this.responseText);
 							drawObj(ctx,obj,selected*offset);
 					}
 			}
@@ -107,7 +109,7 @@
   		}
 			let obj = objs[objSelected];
 			let selected = objSelected;
-			obj.days = document.getElementById("days").value;
+			obj.days = document.getElementById("days").value-0;
 			let dbParam = JSON.stringify(obj);
       objSelected = -1;
  	    document.getElementById("task").value ="";

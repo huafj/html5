@@ -44,13 +44,22 @@ func (srv *Server) createObj(w http.ResponseWriter, r *http.Request, params http
 func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	obj := apiObj{}
-	fmt.Printf("update %s\n", string(body))
-	json.Unmarshal(body, &obj)
+	if err := json.Unmarshal(body, &obj); err != nil {
+		fmt.Printf("update error %v\n", err)
+	}
 	for i := range srv.Objs {
 		if srv.Objs[i].ID == obj.ID {
-			srv.Objs[i].Days = obj.Days + obj.Add
+			if obj.Add != 0 {
+				srv.Objs[i].Current += obj.Add
+				if srv.Objs[i].Current < 0 {
+					srv.Objs[i].Current = 0
+				}
+			}
+			srv.Objs[i].Days = obj.Days
 			fmt.Fprintf(w, string(body))
 			go func() {
+				fmt.Printf("update %s\n", body)
+				fmt.Printf("save %s Days to %d %v\n", srv.Objs[i].Title, srv.Objs[i].Days, obj)
 				srv.Save()
 			}()
 			break
@@ -62,7 +71,6 @@ func (srv *Server) deleteObj(w http.ResponseWriter, r *http.Request, params http
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	obj := apiObj{}
 	json.Unmarshal(body, &obj)
-	fmt.Printf("delete %s\n", string(body))
 	for i := range srv.Objs {
 		if srv.Objs[i].ID == obj.ID {
 			if i == len(srv.Objs)-1 {
