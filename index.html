@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            background-color: rgba(0, 0, 0, 0.1)
+        }
+        
+        canvas {
+            display: block;
+            margin: 200px auto;
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="solar" width="300" height="300"></canvas>
+<center>
+<button type="button" OnClick="OnChangeObj(1)">+</button>
+<button type="button" OnClick="OnChangeObj(-1)">-</button>
+</center>
+<script>
+	var objs=[{
+			      id:1,
+		 				days:10,
+		 				accDays:6,
+		 				current:5,
+	          add:1,
+		 				title:"学习"
+	         },
+					 {
+					  	id:2,	
+		 					days:5,
+		 					current:3,
+  	 					accDays:4,
+	            add:-1,
+		 					title:"B"
+	         }];
+	var high = 300;
+	var width = 30;	
+	var offset=50;
+	var objSelected=-1;
+	
+	function init(){
+  			let canvas = document.querySelector("#solar");
+				let ctx = canvas.getContext("2d");
+  	    canvas.addEventListener("mousedown",doMouseDown,false);				
+        draw(ctx,objs);
+  }
+
+	function getPointOnCanvas(canvas, x, y) {
+			var bbox = canvas.getBoundingClientRect();
+			return { x: x - bbox.left * (canvas.width  / bbox.width),
+					y: y - bbox.top  * (canvas.height / bbox.height)
+					};
+	}
+
+	function doMouseDown(event) {
+			var x = event.pageX;
+			var y = event.pageY;
+			var canvas = event.target;
+			var loc = getPointOnCanvas(canvas, x, y);
+			for(i=0;i<objs.length;i++){
+					x = i*offset;
+					if(loc.x>=x && loc.x <= x+width){
+							objSelected = i;
+							break;
+					}						 
+			}
+  }
+
+	function OnChangeObj(){
+			if(objSelected < 0){
+					return;
+  		}
+			let obj = objs[objSelected];
+			let dbParam = JSON.stringify(obj);
+			let selected = objSelected;
+      objSelected = -1;
+			xmlhttp = new XMLHttpRequest();
+			xmlhttp.onreadystatechange = function() {
+					if (this.readyState == 4  && this.status == 200) {
+							let canvas = document.querySelector("#solar");
+							let ctx = canvas.getContext("2d");
+							let obj = JSON.parse(this.responseText);
+							objs[selected] = obj;
+							drawObj(ctx,obj,selected*offset);
+					}
+			}
+			xmlhttp.open("POST", "/api/update", true);
+			xmlhttp.setRequestHeader("Content-type", "application/json");
+			xmlhttp.send(dbParam);
+	}
+		
+  function draw(ctx,objs){
+  		for(let i=0;i<objs.length;i++){
+						drawObj(ctx,objs[i],i*offset);
+				}
+  }
+
+	async function sleep(seconds) {
+     await new Promise(r => setTimeout(r, seconds*1000));
+  }
+	
+	function raiseUpRect(ctx,obj,step,val,target,x,w,inc){
+			if (inc){
+					ctx.fillStyle = "rgb(255,0,0)";
+					ctx.fillRect(x,val,w,step);
+					val -= step;
+			}else{
+      		ctx.fillStyle = "rgb(255,255,255)";
+					ctx.fillRect(x,target,w,step);
+					target += step;
+			}
+
+			if(val > target){
+							setTimeout(()=>{
+									raiseUpRect(ctx,obj,step,val,target,x,w,inc);
+							},100);
+			}else{
+  		  let step = high/obj.days;
+			  for(let i=0;i<obj.days;i++){
+		        ctx.beginPath();
+						ctx.moveTo(x,high-step*i);
+						ctx.lineTo(x+width,high-step*i);
+			      ctx.closePath();
+						if(i==obj.accDays){
+			         ctx.strokeStyle = "rgb(255,0,0)";
+						}else{
+							 ctx.strokeStyle = "rgb(255,255,0)";
+						}
+						ctx.stroke();
+			  }
+			}
+	}
+	
+	function drawObj(ctx,obj,off){
+			  let step = high/obj.days;
+			  let target = step * obj.current;
+				let newStep =step/10;
+			  let newTarget = step*(obj.current+obj.add);
+			
+  		  ctx.fillStyle = "rgb(255,255,255)";
+			  ctx.fillRect(off,0,width,high);
+			  ctx.fillStyle = "rgb(255,0,0)";
+    	  ctx.fillRect(off,high-target,width,target);
+
+			  for(let i=0;i<obj.days;i++){
+		        ctx.beginPath();
+						ctx.moveTo(off,high-step*i);
+						ctx.lineTo(off+width,high-step*i);
+			      ctx.closePath();
+						if(i==obj.accDays){
+			         ctx.strokeStyle = "rgb(255,0,0)";
+						}else{
+							 ctx.strokeStyle = "rgb(255,255,0)";
+						}
+						ctx.stroke();
+			  }
+			  ctx.fillStyle = "rgb(255,0,0)";
+			  ctx.fillText(obj.title,off,10);
+			  if(obj.add > 0){
+						setTimeout(()=>{								
+								raiseUpRect(ctx,obj,newStep,high-target,high-newTarget,off,width,true);
+						},100);
+				}
+
+			  if(obj.add < 0){
+						setTimeout(()=>{								
+								raiseUpRect(ctx,obj,newStep,high-newTarget,high-target,off,width,false);
+			   },100);
+			}
+	}
+	
+    init();
+</script>
+</body>
+</html>
