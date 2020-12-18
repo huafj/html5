@@ -17,29 +17,30 @@
     </style>
 </head>
 <body>
+	<div id="options" style="position: absolute;top: 0px;left: 216px;width:800px;background: #e8eef7">
+		<canvas id="solar" width="300" height="300"></canvas>
+	</div>
+	<div id="editor" style="position: absolute;top:120px;left:0px;width:215px;background:#c3d9ff">
+		<form action="/statics/demosource/demo-form.php">
+			<label>任务</label>
+			<input type="text" id="task" value=""><br>
+			<label for="female">天数</label>
+			<input type="text" id="days" value=""><br><br>
+			<center>
+				<input type="button" value="创建" OnClick="OnCreateObj()">
+				<input type="button" value="更新" OnClick="OnUpdateObj()">
+				<input type="button" value="删除" OnClick="OnDeleteObj()">
+			</center>
+		</form>
+		<center>
+		  <button type="button" OnClick="OnChangeObj(1)">+</button>
+		  <button type="button" OnClick="OnChangeObj(-1)">-</button>
+		</center>
+</div>
 
-<canvas id="solar" width="300" height="300"></canvas>
-<center>
-<button type="button" OnClick="OnChangeObj(1)">+</button>
-<button type="button" OnClick="OnChangeObj(-1)">-</button>
-</center>
 <script>
-	var objs=[{
-			      id:1,
-		 				days:10,
-		 				accDays:6,
-		 				current:5,
-	          add:1,
-		 				title:"学习"
-	         },
-					 {
-					  	id:2,	
-		 					days:5,
-		 					current:3,
-  	 					accDays:4,
-	            add:-1,
-		 					title:"B"
-	         }];
+
+  var objs={{.Objs}};
 	var high = 300;
 	var width = 30;	
 	var offset=50;
@@ -68,19 +69,23 @@
 					x = i*offset;
 					if(loc.x>=x && loc.x <= x+width){
 							objSelected = i;
+							document.getElementById("task").value = objs[i].title;
 							break;
 					}						 
 			}
   }
 
-	function OnChangeObj(){
+	function OnChangeObj(val){
 			if(objSelected < 0){
 					return;
   		}
 			let obj = objs[objSelected];
+			obj.Add = val;
 			let dbParam = JSON.stringify(obj);
 			let selected = objSelected;
       objSelected = -1;
+ 	    document.getElementById("task").value ="";
+			document.getElementById("days").value = "";
 			xmlhttp = new XMLHttpRequest();
 			xmlhttp.onreadystatechange = function() {
 					if (this.readyState == 4  && this.status == 200) {
@@ -94,6 +99,81 @@
 			xmlhttp.open("POST", "/api/update", true);
 			xmlhttp.setRequestHeader("Content-type", "application/json");
 			xmlhttp.send(dbParam);
+	}
+
+	function OnUpdateObj(){
+			if(objSelected < 0){
+					return;
+  		}
+			let obj = objs[objSelected];
+			let selected = objSelected;
+			obj.days = document.getElementById("days").value;
+			let dbParam = JSON.stringify(obj);
+      objSelected = -1;
+ 	    document.getElementById("task").value ="";
+			document.getElementById("days").value = "";
+	  	xmlhttp = new XMLHttpRequest();
+			xmlhttp.onreadystatechange = function() {
+					if (this.readyState == 4  && this.status == 200) {
+							let canvas = document.querySelector("#solar");
+							let ctx = canvas.getContext("2d");
+							let obj = JSON.parse(this.responseText);
+							objs[selected] = obj;
+							drawObj(ctx,obj,selected*offset);
+					}					
+			}
+			xmlhttp.open("POST", "/api/update", true);
+			xmlhttp.setRequestHeader("Content-type", "application/json");
+			xmlhttp.send(dbParam);
+	
+	}
+
+	function OnDeleteObj(){
+			if(objSelected < 0){
+					return;
+  		}
+			let obj = objs[objSelected];
+			let dbParam = JSON.stringify(obj);
+      objSelected = -1;
+	    document.getElementById("task").value ="";
+			document.getElementById("days").value = "";
+	  	xmlhttp = new XMLHttpRequest();
+			xmlhttp.onreadystatechange = function() {
+					if (this.readyState == 4  && this.status == 200) {
+							window.open("/")
+					}
+			}
+			xmlhttp.open("DELETE", "/api/delete", true);
+			xmlhttp.setRequestHeader("Content-type", "application/json");
+			xmlhttp.send(dbParam);
+	
+	}
+
+	function OnCreateObj(){
+			let title = document.getElementById("task").value;
+			let days = document.getElementById("days").value;
+			if(title && days){
+					let obj={
+							"title":title,
+							"days":days-0
+					}
+					let dbParam = JSON.stringify(obj);
+					xmlhttp = new XMLHttpRequest();
+					xmlhttp.onreadystatechange = function() {
+							if (this.readyState == 4  && this.status == 200) {
+									let canvas = document.querySelector("#solar");
+									let ctx = canvas.getContext("2d");
+									let obj = JSON.parse(this.responseText);
+									objs.push(obj);
+									drawObj(ctx,obj,objs.length*offset);
+							}
+      		    document.getElementById("task").value ="";
+							document.getElementById("days").value = "";
+					}
+					xmlhttp.open("POST", "/api/create", true);
+					xmlhttp.setRequestHeader("Content-type", "application/json");
+					xmlhttp.send(dbParam);
+		  }
 	}
 		
   function draw(ctx,objs){
@@ -135,6 +215,7 @@
 						}
 						ctx.stroke();
 			  }
+				obj.add = 0;
 			}
 	}
 	
@@ -143,7 +224,7 @@
 			  let target = step * obj.current;
 				let newStep =step/10;
 			  let newTarget = step*(obj.current+obj.add);
-			
+				ctx.clearRect(off,0,width,high);
   		  ctx.fillStyle = "rgb(255,255,255)";
 			  ctx.fillRect(off,0,width,high);
 			  ctx.fillStyle = "rgb(255,0,0)";
@@ -176,7 +257,7 @@
 			}
 	}
 	
-    init();
+  init();
 </script>
 </body>
 </html>
