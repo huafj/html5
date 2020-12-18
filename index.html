@@ -17,35 +17,44 @@
     </style>
 </head>
 <body>
-	<div id="options" style="position: absolute;top: 0px;left: 216px;width:800px;background: #e8eef7">
+	<div id="options" style="position: absolute;top: 0px;left:202px;width:800px;background: #e8eef7">
 		<canvas id="solar" width="300" height="300"></canvas>
 	</div>
-	<div id="editor" style="position: absolute;top:120px;left:0px;width:215px;background:#c3d9ff">
-		<form action="/statics/demosource/demo-form.php">
+	<div id="editor" style="position: absolute;top:0px;left:0px;width:200px;background:#c3d9ff">
+    <br>
+		<form>
 			<label>任务</label>
 			<input type="text" id="task" value=""><br>
 			<label>天数</label>
 			<input type="number" id="days" value=""><br><br>
+			<label>心愿</label>
+			<input type="text" id="gift" value=""><br><br>
+			<label>执行</label>
+			<input type="text" id="spent" value=""><br><br>      
+			<label>剩余</label>
+			<input type="text" id="rest" value=""><br><br>      
 			<center>
 				<input type="button" value="创建" OnClick="OnCreateObj()">
 				<input type="button" value="更新" OnClick="OnUpdateObj()">
 				<input type="button" value="删除" OnClick="OnDeleteObj()">
 			</center>
 		</form>
+    <br><br><br>
 		<center>
 		  <button type="button" OnClick="OnChangeObj(1)">+</button>
 		  <button type="button" OnClick="OnChangeObj(-1)">-</button>
 		</center>
+    <br><br><br>
 </div>
 
 <script>
 
-  var objs={{.Objs}};
-	var high = 300;
-	var width = 30;	
-	var offset=50;
+  var objs={{.TempObjs}};
+	var high = 220;
+	var width = 80;	
+	var offset= 110;
 	var objSelected=-1;
-	
+  var offY = -0;
 	function init(){
   			let canvas = document.querySelector("#solar");
 				let ctx = canvas.getContext("2d");
@@ -60,6 +69,14 @@
 					};
 	}
 
+  function reSet(){
+			document.getElementById("task").value = "";
+			document.getElementById("days").value = "";
+			document.getElementById("gift").value = ""
+			document.getElementById("spent").value = ""
+			document.getElementById("rest").value = ""
+  }
+  
 	function doMouseDown(event) {
 			var x = event.pageX;
 			var y = event.pageY;
@@ -69,8 +86,11 @@
 					x = i*offset;
 					if(loc.x>=x && loc.x <= x+width){
 							objSelected = i;
-							document.getElementById("task").value = objs[i].title;
+						  document.getElementById("task").value = objs[i].title;
 						  document.getElementById("days").value = objs[i].days;
+						  document.getElementById("gift").value = objs[i].gift;
+						  document.getElementById("spent").value = objs[i].accDays;
+						  document.getElementById("rest").value = objs[i].days-objs[i].current;
 							break;
 					}						 
 			}
@@ -85,8 +105,7 @@
 			let dbParam = JSON.stringify(obj);
 			let selected = objSelected;
       objSelected = -1;
- 	    document.getElementById("task").value ="";
-			document.getElementById("days").value = "";
+      reSet();
 			xmlhttp = new XMLHttpRequest();
 			xmlhttp.onreadystatechange = function() {
 					if (this.readyState == 4  && this.status == 200) {
@@ -94,7 +113,6 @@
 							let ctx = canvas.getContext("2d");
 							let obj = JSON.parse(this.responseText);
 							objs[selected] = obj;
-							console.log("obj.add="+obj.add+" "+this.responseText);
 							drawObj(ctx,obj,selected*offset);
 					}
 			}
@@ -110,10 +128,10 @@
 			let obj = objs[objSelected];
 			let selected = objSelected;
 			obj.days = document.getElementById("days").value-0;
+      obj.gift = document.getElementById("gift").value 
 			let dbParam = JSON.stringify(obj);
       objSelected = -1;
- 	    document.getElementById("task").value ="";
-			document.getElementById("days").value = "";
+      reSet();
 	  	xmlhttp = new XMLHttpRequest();
 			xmlhttp.onreadystatechange = function() {
 					if (this.readyState == 4  && this.status == 200) {
@@ -137,8 +155,7 @@
 			let obj = objs[objSelected];
 			let dbParam = JSON.stringify(obj);
       objSelected = -1;
-	    document.getElementById("task").value ="";
-			document.getElementById("days").value = "";
+      reSet();
 	  	xmlhttp = new XMLHttpRequest();
 			xmlhttp.onreadystatechange = function() {
 					if (this.readyState == 4  && this.status == 200) {
@@ -154,9 +171,13 @@
 	function OnCreateObj(){
 			let title = document.getElementById("task").value;
 			let days = document.getElementById("days").value;
+      let gift = document.getElementById("gift").value;
 			if(title && days){
 					let obj={
 							"title":title,
+              "gift": gift,
+              "current":1,
+              "accDays":1,
 							"days":days-0
 					}
 					let dbParam = JSON.stringify(obj);
@@ -169,8 +190,7 @@
 									objs.push(obj);
 									drawObj(ctx,obj,objs.length*offset);
 							}
-      		    document.getElementById("task").value ="";
-							document.getElementById("days").value = "";
+ 		          reSet();
 					}
 					xmlhttp.open("POST", "/api/create", true);
 					xmlhttp.setRequestHeader("Content-type", "application/json");
@@ -191,11 +211,11 @@
 	function raiseUpRect(ctx,obj,step,val,target,x,w,inc){
 			if (inc){
 					ctx.fillStyle = "rgb(255,0,0)";
-					ctx.fillRect(x,val,w,step);
+					ctx.fillRect(x,val+offY,w,step);
 					val -= step;
 			}else{
       		ctx.fillStyle = "rgb(255,255,255)";
-					ctx.fillRect(x,target,w,step);
+					ctx.fillRect(x,targe+offY,w,step);
 					target += step;
 			}
 
@@ -207,8 +227,8 @@
   		  let step = high/obj.days;
 			  for(let i=0;i<obj.days;i++){
 		        ctx.beginPath();
-						ctx.moveTo(x,high-step*i);
-						ctx.lineTo(x+width,high-step*i);
+						ctx.moveTo(x,offY+high-step*i);
+						ctx.lineTo(x+width,offY+high-step*i);
 			      ctx.closePath();
 						if(i==obj.accDays){
 			         ctx.strokeStyle = "rgb(255,0,0)";
@@ -226,16 +246,17 @@
 			  let target = step * obj.current;
 				let newStep =step/10;
 			  let newTarget = step*(obj.current+obj.add);
-				ctx.clearRect(off,0,width,high);
+      
+				ctx.clearRect(off,offY,width,high);
   		  ctx.fillStyle = "rgb(255,255,255)";
-			  ctx.fillRect(off,0,width,high);
+			  ctx.fillRect(off,offY,width,high);
 			  ctx.fillStyle = "rgb(255,0,0)";
-    	  ctx.fillRect(off,high-target,width,target);
+    	  ctx.fillRect(off,offY+high-target,width,target);
 
 			  for(let i=0;i<obj.days;i++){
 		        ctx.beginPath();
-						ctx.moveTo(off,high-step*i);
-						ctx.lineTo(off+width,high-step*i);
+						ctx.moveTo(off,offY+high-step*i);
+						ctx.lineTo(off+width,offY+high-step*i);
 			      ctx.closePath();
 						if(i==obj.accDays){
 			         ctx.strokeStyle = "rgb(255,0,0)";
@@ -245,7 +266,7 @@
 						ctx.stroke();
 			  }
 			  ctx.fillStyle = "rgb(255,0,0)";
-			  ctx.fillText(obj.title,off,10);
+			  ctx.fillText(obj.title,off,10+offY);
 			  if(obj.add > 0){
 						setTimeout(()=>{								
 								raiseUpRect(ctx,obj,newStep,high-target,high-newTarget,off,width,true);
