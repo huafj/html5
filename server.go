@@ -70,8 +70,6 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 			srv.Objs[i].Gift = obj.Gift
 			fmt.Fprintf(w, string(body))
 			go func() {
-				fmt.Printf("update %s\n", body)
-				fmt.Printf("save %s Days to %d %v\n", srv.Objs[i].Title, srv.Objs[i].Days, obj)
 				srv.Save()
 			}()
 			break
@@ -155,6 +153,7 @@ func main() {
 	router.POST("/api/update", srv.updateObj)
 	router.POST("/api/create", srv.createObj)
 	router.DELETE("/api/delete", srv.deleteObj)
+	router.ServeFiles("/img/*filepath", http.Dir("img"))
 	router.GET("/", srv.getObjs)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), router))
 }

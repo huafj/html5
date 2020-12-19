@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Ela</title>
     <style>
         body {
             padding: 0;
@@ -17,10 +17,10 @@
     </style>
 </head>
 <body>
-	<div id="options" style="position: absolute;top: 0px;left:202px;width:800px;background: #e8eef7">
+	<div id="options" style="position: absolute;top: 0px;left:201px;right:0;bottom:0;background:url('/img/frozen.jpeg')">
 		<canvas id="solar" width="300" height="300"></canvas>
 	</div>
-	<div id="editor" style="position: absolute;top:0px;left:0px;width:200px;background:#c3d9ff">
+	<div id="editor" style="position: absolute;top:0;left:0;width:200px;bottom:0;background:url('/img/frozen.jpeg')">
     <br>
 		<form>
 			<label>任务</label>
@@ -58,6 +58,9 @@
 	function init(){
   			let canvas = document.querySelector("#solar");
 				let ctx = canvas.getContext("2d");
+        var pic = new Image();
+
+        //ctx.drawImage(pic,0, 0);
   	    canvas.addEventListener("mousedown",doMouseDown,false);				
         draw(ctx,objs);
   }
