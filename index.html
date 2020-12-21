@@ -59,8 +59,6 @@
   			let canvas = document.querySelector("#solar");
 				let ctx = canvas.getContext("2d");
         var pic = new Image();
-
-        //ctx.drawImage(pic,0, 0);
   	    canvas.addEventListener("mousedown",doMouseDown,false);				
         draw(ctx,objs);
   }
@@ -240,7 +238,10 @@
 						}
 						ctx.stroke();
 			  }
-				obj.add = 0;
+			  if (obj.current+obj.add >= obj.days){
+						obj.add = 0;
+						window.location="/firework?id="+obj.id;
+				}
 			}
 	}
 	

@@ -41,7 +41,7 @@ func (srv *Server) createObj(w http.ResponseWriter, r *http.Request, params http
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	obj := apiObj{}
 	json.Unmarshal(body, &obj)
-	obj.ID = srv.ID
+	obj.ID = srv.ID + 1
 	obj.canUpdate = true
 	srv.ID++
 	srv.Objs = append(srv.Objs, obj)
@@ -102,6 +102,14 @@ func (srv *Server) getObjs(w http.ResponseWriter, r *http.Request, params httpro
 	srv.htmlTmpl.Execute(w, srv)
 }
 
+func (srv *Server) cong(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	id := params.ByName("id")
+	fmt.Printf("finish id=%s %v\n", id, r.RequestURI)
+	data, _ := ioutil.ReadFile("firework.html")
+	w.Header().Set("Content-Type", "text/html;charset=utf-8")
+	fmt.Fprintf(w, string(data))
+}
+
 func (srv *Server) Save() {
 	body, err := json.MarshalIndent(srv, "", " ")
 	if err == nil {
@@ -156,6 +164,10 @@ func main() {
 	router.POST("/api/create", srv.createObj)
 	router.DELETE("/api/delete", srv.deleteObj)
 	router.ServeFiles("/img/*filepath", http.Dir("img"))
+	router.ServeFiles("/audio/*filepath", http.Dir("audio"))
+	router.ServeFiles("/js/*filepath", http.Dir("js"))
 	router.GET("/", srv.getObjs)
+	router.GET("/firework", srv.cong)
+
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), router))
 }
