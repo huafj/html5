@@ -64,6 +64,8 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 				srv.Objs[i].Current += obj.Add
 				if srv.Objs[i].Current < 0 {
 					srv.Objs[i].Current = 0
+				} else if srv.Objs[i].Current < srv.Objs[i].Days {
+					srv.Objs[i].Current = srv.Objs[i].Days
 				}
 			}
 			srv.Objs[i].Days = obj.Days
@@ -121,6 +123,14 @@ func main() {
 	flag.StringVar(&srv.config, "config", "config.json", "config file")
 	flag.Parse()
 
+	htmlBody, err := ioutil.ReadFile("index.html")
+	if err != nil {
+		panic(err)
+	}
+	srv.htmlTmpl = template.Must(template.New("html").Parse(string(htmlBody)))
+	body, _ := ioutil.ReadFile("config.json")
+	json.Unmarshal(body, srv)
+
 	canUpdate := false
 	if srv.Updated.IsZero() {
 		canUpdate = true
@@ -140,14 +150,6 @@ func main() {
 			srv.Objs[i].AccDays += 1
 		}
 	}
-
-	htmlBody, err := ioutil.ReadFile("index.html")
-	if err != nil {
-		panic(err)
-	}
-	srv.htmlTmpl = template.Must(template.New("html").Parse(string(htmlBody)))
-	body, _ := ioutil.ReadFile("config.json")
-	json.Unmarshal(body, srv)
 
 	router := httprouter.New()
 	router.POST("/api/update", srv.updateObj)
