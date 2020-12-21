@@ -1,17 +1,19 @@
 {
  "id": 2,
- "updated": "2020-12-18T20:00:25.822841559+08:00",
+ "updated": "2020-12-21T22:07:31.674958107+08:00",
  "objs": [
   {
    "days": 10,
-   "accDays": 1,
+   "accDays": 2,
+   "current": 1,
    "title": "主动学习",
-   "id":1,
-   "gift": "冰雪奇缘餐具"
+   "gift": "冰雪奇缘餐具",
+   "id": 1
   },
   {
    "days": 5,
-   "accDays": 1,
+   "accDays": 2,
+   "current":0,
    "title": "不挑食",
    "gift": "勺子",
    "id": 2
