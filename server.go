@@ -33,6 +33,7 @@ type Server struct {
 	DoneObjs    []apiObj  `json:"done,omitempty"`
 	TempObjs    []apiObj  `json:"-"`
 	htmlTmpl    *template.Template
+	fwTmpl      *template.Template
 	config      string
 	forceUpdate bool
 }
@@ -105,9 +106,8 @@ func (srv *Server) getObjs(w http.ResponseWriter, r *http.Request, params httpro
 func (srv *Server) cong(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	id := params.ByName("id")
 	fmt.Printf("finish id=%s %v\n", id, r.RequestURI)
-	data, _ := ioutil.ReadFile("firework.html")
-	w.Header().Set("Content-Type", "text/html;charset=utf-8")
-	fmt.Fprintf(w, string(data))
+	w.Header().Add("Content-Type", "text/html;charset=utf-8")
+	srv.fwTmpl.Execute(w, nil)
 }
 
 func (srv *Server) Save() {
@@ -136,6 +136,13 @@ func main() {
 		panic(err)
 	}
 	srv.htmlTmpl = template.Must(template.New("html").Parse(string(htmlBody)))
+
+	fwBody, err := ioutil.ReadFile("firework.html")
+	if err != nil {
+		panic(err)
+	}
+
+	srv.fwTmpl = template.Must(template.New("firework").Parse(string(fwBody)))
 	body, _ := ioutil.ReadFile("config.json")
 	json.Unmarshal(body, srv)
 
