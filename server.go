@@ -33,6 +33,7 @@ type Server struct {
 	DoneObjs    []apiObj  `json:"done,omitempty"`
 	TempObjs    []apiObj  `json:"-"`
 	htmlTmpl    *template.Template
+	fwTmpl      *template.Template
 	config      string
 	forceUpdate bool
 }
@@ -41,7 +42,7 @@ func (srv *Server) createObj(w http.ResponseWriter, r *http.Request, params http
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	obj := apiObj{}
 	json.Unmarshal(body, &obj)
-	obj.ID = srv.ID
+	obj.ID = srv.ID + 1
 	obj.canUpdate = true
 	srv.ID++
 	srv.Objs = append(srv.Objs, obj)
@@ -64,6 +65,8 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 				srv.Objs[i].Current += obj.Add
 				if srv.Objs[i].Current < 0 {
 					srv.Objs[i].Current = 0
+				} else if srv.Objs[i].Current < srv.Objs[i].Days {
+					srv.Objs[i].Current = srv.Objs[i].Days
 				}
 			}
 			srv.Objs[i].Days = obj.Days
@@ -100,6 +103,13 @@ func (srv *Server) getObjs(w http.ResponseWriter, r *http.Request, params httpro
 	srv.htmlTmpl.Execute(w, srv)
 }
 
+func (srv *Server) cong(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	id := params.ByName("id")
+	fmt.Printf("finish id=%s %v\n", id, r.RequestURI)
+	w.Header().Add("Content-Type", "text/html;charset=utf-8")
+	srv.fwTmpl.Execute(w, nil)
+}
+
 func (srv *Server) Save() {
 	body, err := json.MarshalIndent(srv, "", " ")
 	if err == nil {
@@ -121,6 +131,21 @@ func main() {
 	flag.StringVar(&srv.config, "config", "config.json", "config file")
 	flag.Parse()
 
+	htmlBody, err := ioutil.ReadFile("index.html")
+	if err != nil {
+		panic(err)
+	}
+	srv.htmlTmpl = template.Must(template.New("html").Parse(string(htmlBody)))
+
+	fwBody, err := ioutil.ReadFile("firework.html")
+	if err != nil {
+		panic(err)
+	}
+
+	srv.fwTmpl = template.Must(template.New("firework").Parse(string(fwBody)))
+	body, _ := ioutil.ReadFile("config.json")
+	json.Unmarshal(body, srv)
+
 	canUpdate := false
 	if srv.Updated.IsZero() {
 		canUpdate = true
@@ -141,19 +166,15 @@ func main() {
 		}
 	}
 
-	htmlBody, err := ioutil.ReadFile("index.html")
-	if err != nil {
-		panic(err)
-	}
-	srv.htmlTmpl = template.Must(template.New("html").Parse(string(htmlBody)))
-	body, _ := ioutil.ReadFile("config.json")
-	json.Unmarshal(body, srv)
-
 	router := httprouter.New()
 	router.POST("/api/update", srv.updateObj)
 	router.POST("/api/create", srv.createObj)
 	router.DELETE("/api/delete", srv.deleteObj)
 	router.ServeFiles("/img/*filepath", http.Dir("img"))
+	router.ServeFiles("/audio/*filepath", http.Dir("audio"))
+	router.ServeFiles("/js/*filepath", http.Dir("js"))
 	router.GET("/", srv.getObjs)
+	router.GET("/firework", srv.cong)
+
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), router))
 }

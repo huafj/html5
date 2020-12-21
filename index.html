@@ -17,10 +17,10 @@
     </style>
 </head>
 <body>
-	<div id="options" style="position: absolute;top: 0px;left:201px;right:0;bottom:0;background:url('/img/frozen.jpeg')">
+	<div id="options" style="position: absolute;top: 0px;left:201px;right:0;bottom:0;background:url('/img/background.jpeg')">
 		<canvas id="solar" width="300" height="300"></canvas>
 	</div>
-	<div id="editor" style="position: absolute;top:0;left:0;width:200px;bottom:0;background:url('/img/frozen.jpeg')">
+	<div id="editor" style="position: absolute;top:0;left:0;width:200px;bottom:0;background:url('/img/background.jpeg')">
     <br>
 		<form>
 			<label>任务</label>
@@ -59,8 +59,6 @@
   			let canvas = document.querySelector("#solar");
 				let ctx = canvas.getContext("2d");
         var pic = new Image();
-
-        //ctx.drawImage(pic,0, 0);
   	    canvas.addEventListener("mousedown",doMouseDown,false);				
         draw(ctx,objs);
   }
@@ -240,7 +238,10 @@
 						}
 						ctx.stroke();
 			  }
-				obj.add = 0;
+			  if (obj.current+obj.add >= obj.days){
+						obj.add = 0;
+						window.location="/firework?id="+obj.id;
+				}
 			}
 	}
 	
