@@ -108,7 +108,6 @@ func (srv *Server) getObjs(w http.ResponseWriter, r *http.Request, params httpro
 
 func (srv *Server) cong(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	id := params.ByName("id")
-	fmt.Printf("finish id=%s %v\n", id, r.RequestURI)
 	w.Header().Add("Content-Type", "text/html;charset=utf-8")
 	srv.fwTmpl.Execute(w, nil)
 }
@@ -156,7 +155,7 @@ func main() {
 		srv.ID = 0
 	} else {
 		now := time.Now()
-		if now.Sub(srv.Updated).Hours() > 23.0 {
+		if now.Sub(srv.Updated).Hours() > 12.0 {
 			canUpdate = true
 			srv.Updated = now
 		}
