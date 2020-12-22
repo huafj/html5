@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Ela</title>
+    <title>Elsa</title>
     <style>
         body {
             padding: 0;
@@ -175,11 +175,9 @@
       let gift = document.getElementById("gift").value;
 			if(title && days){
 					let obj={
-							"title":title,
+							"title": title,
               "gift": gift,
-              "current":1,
-              "accDays":1,
-							"days":days-0
+							"days": days-0
 					}
 					let dbParam = JSON.stringify(obj);
 					xmlhttp = new XMLHttpRequest();
@@ -211,7 +209,7 @@
 	
 	function raiseUpRect(ctx,obj,step,val,target,x,w,inc){
 			if (inc){
-					ctx.fillStyle = "rgb(255,0,0)";
+					ctx.fillStyle = "rgb(255,255,0)";
 					ctx.fillRect(x,val+offY,w,step);
 					val -= step;
 			}else{
@@ -234,7 +232,7 @@
 						if(i==obj.accDays){
 			         ctx.strokeStyle = "rgb(255,0,0)";
 						}else{
-							 ctx.strokeStyle = "rgb(255,255,0)";
+							 ctx.strokeStyle = "rgb(255,100,128)";
 						}
 						ctx.stroke();
 			  }
@@ -254,7 +252,7 @@
 				ctx.clearRect(off,offY,width,high);
   		  ctx.fillStyle = "rgb(255,255,255)";
 			  ctx.fillRect(off,offY,width,high);
-			  ctx.fillStyle = "rgb(255,0,0)";
+			  ctx.fillStyle = "rgb(255,255,0)";
     	  ctx.fillRect(off,offY+high-target,width,target);
 
 			  for(let i=0;i<obj.days;i++){
@@ -265,11 +263,11 @@
 						if(i==obj.accDays){
 			         ctx.strokeStyle = "rgb(255,0,0)";
 						}else{
-							 ctx.strokeStyle = "rgb(255,255,0)";
+							 ctx.strokeStyle = "rgb(255,100,128)";
 						}
 						ctx.stroke();
 			  }
-			  ctx.fillStyle = "rgb(255,0,0)";
+			  ctx.fillStyle = "rgb(255,0,255)";
 			  ctx.fillText(obj.title,off,10+offY);
 			  if(obj.add > 0){
 						setTimeout(()=>{								

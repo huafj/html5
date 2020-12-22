@@ -24,13 +24,14 @@ var S = {
     if (i !== -1) {
       S.UI.simulate(decodeURI(action).substring(i + 3));
     } else {
-      S.UI.simulate('|#countdown 3|Elsa|心|愿|达|成|#rectangle|');
+      S.UI.simulate('|#countdown 3|Elsa|心愿|达成|#rectangle|');
     }
 
     S.Drawing.loop(function () {
       S.Shape.render();
     });
-  }
+  },
+	redirect:false
 };
 
 
@@ -224,64 +225,27 @@ S.UI = (function () {
   }
 
   function bindEvents() {
-    document.body.addEventListener('keydown', function (e) {
-      input.focus();
-
-      if (e.keyCode === 13) {
-        firstAction = false;
-        reset();
-        performAction(input.value);
-      }
-    });
-
-    // input.addEventListener('input', checkInputWidth);
-    // input.addEventListener('change', checkInputWidth);
-    // input.addEventListener('focus', checkInputWidth);
-
-    // help.addEventListener('click', function (e) {
-    //   overlay.classList.toggle('overlay--visible');
-    //   overlay.classList.contains('overlay--visible') && reset(true);
-    // });
-
-    // commands.addEventListener('click', function (e) {
-    //   var el,
-    //       info,
-    //       demo,
-    //       tab,
-    //       active,
-    //       url;
-    //
-    //   if (e.target.classList.contains('commands-item')) {
-    //     el = e.target;
-    //   } else {
-    //     el = e.target.parentNode.classList.contains('commands-item') ? e.target.parentNode : e.target.parentNode.parentNode;
-    //   }
-    //
-    //   info = el && el.querySelector('.commands-item-info');
-    //   demo = el && info.getAttribute('data-demo');
-    //   url = el && info.getAttribute('data-url');
-    //
-    //   if (info) {
-    //     overlay.classList.remove('overlay--visible');
-    //
-    //     if (demo) {
-    //       input.value = demo;
-    //
-    //       if (isTouch) {
-    //         reset();
-    //         performAction(input.value);
-    //       } else {
-    //         input.focus();
-    //       }
-    //     } else if (url) {
-    //       //window.location = url;
-    //     }
-    //   }
-    // });
-
-    canvas.addEventListener('click', function (e) {
-				window.location="/";
-    });
+      canvas.addEventListener('mousedown', function (e) {
+					if(!S.redirect){
+					let sound = document.querySelector("#sound");
+					  sound.play();
+					  sound.loop=true;
+							S.redirect = true;
+					}else{
+						window.location="/";
+					}
+      });
+			canvas.addEventListener('mousemove', function () {
+					let sound = document.querySelector("#sound");
+					sound.loop=true;
+					sound.play();
+			});
+			canvas.addEventListener('devicemoton', function () {
+					let sound = document.querySelector("#sound");
+					alert("play sound"+sound.src);
+					sound.loop=true;
+					sound.play();
+			});
   }
 
   function init() {

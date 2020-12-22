@@ -44,6 +44,8 @@ func (srv *Server) createObj(w http.ResponseWriter, r *http.Request, params http
 	json.Unmarshal(body, &obj)
 	obj.ID = srv.ID + 1
 	obj.canUpdate = true
+	obj.Current = 0
+	obj.AccDays = 0
 	srv.ID++
 	srv.Objs = append(srv.Objs, obj)
 	fmt.Fprintf(w, string(body))
@@ -59,6 +61,7 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 		fmt.Printf("update error %v\n", err)
 	}
 	for i := range srv.Objs {
+		srv.Objs[i].Title = obj.Title
 		if srv.Objs[i].ID == obj.ID {
 			if obj.Add != 0 && (srv.Objs[i].canUpdate || srv.forceUpdate) {
 				srv.Objs[i].canUpdate = false
