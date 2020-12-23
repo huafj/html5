@@ -33,6 +33,8 @@
 			<input type="text" id="spent" value=""><br><br>      
 			<label>剩余</label>
 			<input type="text" id="rest" value=""><br><br>      
+			<label>ID:</label>
+			<label id="taskId"></label><br><br>      
 			<center>
 				<input type="button" value="创建" OnClick="OnCreateObj()">
 				<input type="button" value="更新" OnClick="OnUpdateObj()">
@@ -41,8 +43,8 @@
 		</form>
     <br><br><br>
 		<center>
-		  <button type="button" OnClick="OnChangeObj(1)">+</button>
-		  <button type="button" OnClick="OnChangeObj(-1)">-</button>
+		  <button type="button" OnClick="OnChangeObj(1)">&nbsp;&nbsp;+&nbsp;&nbsp;</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+		  <button type="button" OnClick="OnChangeObj(-1)">&nbsp;&nbsp;-&nbsp;&nbsp;</button>
 		</center>
     <br><br><br>
 </div>
@@ -76,6 +78,7 @@
 			document.getElementById("gift").value = ""
 			document.getElementById("spent").value = ""
 			document.getElementById("rest").value = ""
+			document.getElementById("taskId").innerText = ""
   }
   
 	function doMouseDown(event) {
@@ -92,6 +95,7 @@
 						  document.getElementById("gift").value = objs[i].gift;
 						  document.getElementById("spent").value = objs[i].accDays;
 						  document.getElementById("rest").value = objs[i].days-objs[i].current;
+						  document.getElementById("taskId").innerText = objs[i].id;
 							break;
 					}						 
 			}

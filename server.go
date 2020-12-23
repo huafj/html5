@@ -17,12 +17,12 @@ import (
 
 type apiObj struct {
 	Days      int    `json:"days"`
-	AccDays   int    `json:"accDays,omitempty"`
-	Current   int    `json:"current,omitempty"`
+	AccDays   int    `json:"accDays"`
+	Current   int    `json:"current"`
 	Add       int    `json:"add,omitempty"`
 	Title     string `json:"title"`
 	Gift      string `json:"gift"`
-	ID        int    `json:"id,omitempty"`
+	ID        int    `json:"id"`
 	canUpdate bool
 }
 
@@ -36,6 +36,7 @@ type Server struct {
 	fwTmpl      *template.Template
 	config      string
 	forceUpdate bool
+	debug       bool
 }
 
 func (srv *Server) createObj(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -58,17 +59,20 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	obj := apiObj{}
 	if err := json.Unmarshal(body, &obj); err != nil {
-		fmt.Printf("update error %v\n", err)
+		log.Printf("update error %v\n", err)
 	}
 	for i := range srv.Objs {
-		srv.Objs[i].Title = obj.Title
 		if srv.Objs[i].ID == obj.ID {
+			srv.Objs[i].Title = obj.Title
 			if obj.Add != 0 && (srv.Objs[i].canUpdate || srv.forceUpdate) {
+				if srv.debug {
+					log.Printf("udate %s obj=%v forcUpdate=%v\n", string(body), srv.Objs[i], srv.forceUpdate)
+				}
 				srv.Objs[i].canUpdate = false
 				srv.Objs[i].Current += obj.Add
 				if srv.Objs[i].Current < 0 {
 					srv.Objs[i].Current = 0
-				} else if srv.Objs[i].Current < srv.Objs[i].Days {
+				} else if srv.Objs[i].Current >= srv.Objs[i].Days {
 					srv.Objs[i].Current = srv.Objs[i].Days
 				}
 			}
@@ -107,7 +111,7 @@ func (srv *Server) getObjs(w http.ResponseWriter, r *http.Request, params httpro
 }
 
 func (srv *Server) cong(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	id := params.ByName("id")
+	//id := params.ByName("id")
 	w.Header().Add("Content-Type", "text/html;charset=utf-8")
 	srv.fwTmpl.Execute(w, nil)
 }
@@ -130,6 +134,7 @@ func main() {
 	srv := &Server{Objs: make([]apiObj, 0, 0)}
 	port := flag.Int("port", 80, "port")
 	flag.BoolVar(&srv.forceUpdate, "force", false, "force update")
+	flag.BoolVar(&srv.debug, "debug", false, "debug")
 	flag.StringVar(&srv.config, "config", "config.json", "config file")
 	flag.Parse()
 
