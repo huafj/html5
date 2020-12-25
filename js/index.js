@@ -231,7 +231,7 @@ S.UI = (function () {
 							let sound = document.querySelector("#sound");
 							if(gift){
 									gift.play();
-									gift.loop=true;
+									//gift.loop=true;
 							}
 							sound.play();
 							sound.loop=true;
