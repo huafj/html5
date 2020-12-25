@@ -111,9 +111,23 @@ func (srv *Server) getObjs(w http.ResponseWriter, r *http.Request, params httpro
 }
 
 func (srv *Server) cong(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	//id := params.ByName("id")
+	type soundPath struct {
+		Existed bool
+		Path    string
+	}
+	sp := soundPath{}
+	id := params.ByName("id")
+	id = r.URL.Query().Get("id")
+	path := fmt.Sprintf("audio/%s.mp3", id)
+
+	if _, err := os.Stat(path); err == nil {
+		sp.Existed = true
+		sp.Path = "/" + path
+	}
+	log.Printf("id=%s,%s path=%s %v\n", id, r.RequestURI, path, sp.Existed)
+
 	w.Header().Add("Content-Type", "text/html;charset=utf-8")
-	srv.fwTmpl.Execute(w, nil)
+	srv.fwTmpl.Execute(w, sp)
 }
 
 func (srv *Server) Save() {

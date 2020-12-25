@@ -227,9 +227,14 @@ S.UI = (function () {
   function bindEvents() {
       canvas.addEventListener('mousedown', function (e) {
 					if(!S.redirect){
-					let sound = document.querySelector("#sound");
-					  sound.play();
-					  sound.loop=true;
+							let gift = document.querySelector("#gift");
+							let sound = document.querySelector("#sound");
+							if(gift){
+									gift.play();
+									gift.loop=true;
+							}
+							sound.play();
+							sound.loop=true;
 							S.redirect = true;
 					}else{
 						window.location="/";
