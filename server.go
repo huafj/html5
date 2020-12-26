@@ -173,7 +173,10 @@ func (srv *Server) uploadFile(w http.ResponseWriter, r *http.Request, params htt
 		if _, err := io.Copy(wf, file); err == nil {
 			wf.Close()
 			go func() {
-				cmd := exec.Command("ffmpeg", "-i", filepath.Join("audio", fileName),
+				cmd := exec.Command("rm", "-f", filepath.Join("audio", id+".mp3"))
+				cmd.Run()
+
+				cmd = exec.Command("ffmpeg", "-i", filepath.Join("audio", fileName),
 					"-vn", "-f", "mp3", filepath.Join("audio", id+".mp3"))
 
 				fmt.Printf("%v\n", cmd)
