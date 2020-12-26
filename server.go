@@ -253,8 +253,8 @@ func main() {
 		}
 	}
 	srv.workDir, _ = os.Getwd()
-	if len(srv.Background) == 0 {
-		srv.Background = "frozen.jpeg"
+	if fi, err := os.Stat(filepath.Join("img", srv.Background)); err != nil || !fi.Mode().IsRegular() || len(srv.Background) == 0 {
+		srv.Background = "frozen.jpg"
 	}
 	router := httprouter.New()
 	router.POST("/api/update", srv.updateObj)

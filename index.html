@@ -3,13 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <title>Elsa</title>
+    <style>
+			body {
+				background: url('/img/{{.Background}}') no-repeat center center fixed;
+				/*兼容浏览器版本*/
+        -webkit-background-size: cover;
+				-o-background-size: cover;                
+				background-size: cover;
+			}
+		</style>
+
 </head>
-<body style="width:100%;heigh:100%;background-size: cover;background:url('/img/{{.Background}}') center repeat;">
+<body>
 	<div id="options" style="position: absolute;top: 0px;left:201px;right:0;bottom:0;">
 		<canvas id="solar" width="300" height="300"></canvas>
 	</div>
 	<div id="editor" style="position: absolute;top:0;left:0;width:200px;bottom:0;">
-    <br>
 		<form>
 			<label>任务</label>
 			<input type="text" id="task" value=""><br>
@@ -22,7 +31,7 @@
 			<label>剩余</label>
 			<input type="text" id="rest" value=""><br><br>      
 			<label>ID:</label>
-			<label id="taskId"></label><br><br>      
+			<label id="taskId"></label><br>
 			<center>
 				<input type="button" value="创建" OnClick="OnCreateObj()">
 				<input type="button" value="更新" OnClick="OnUpdateObj()"> <br>
@@ -36,24 +45,24 @@
 		  <button type="button" OnClick="OnChangeObj(-1)">&nbsp;&nbsp;-&nbsp;&nbsp;</button>
 		</center>
     <br>
-          <div class="container">
-          <div class="upload_form_cont">
-              <form id="upload_form" enctype="multipart/form-data" method="post" action="upload">
-                  <div>
-                      <div><input type="file" name="image_file" id="image_file"  onchange="fileSelected();" /></div>                  </div>
-                  <div>
-                      <input type="button" value="上传" onclick="startUploading()" />
-                  </div>
-                  <div id="error2">An error occurred while uploading the file</div>
-                  <div id="abort">The upload has been canceled by the user or the browser dropped the connection</div>
-                  <div id="progress_info">
-                      <div id="progress"></div>
-                      <div id="progress_percent">&nbsp;</div>
-                      <div id="upload_response"></div>
-                  </div>
-              </form>
-          </div>
-      </div>
+    <div class="container">
+       <div class="upload_form_cont">
+           <form id="upload_form" enctype="multipart/form-data" method="post" action="upload">
+               <div>
+                   <div><input type="file" name="image_file" id="image_file"  onchange="fileSelected();" /></div>                  </div>
+               <div>
+                   <input type="button" value="上传" onclick="startUploading()" />
+               </div>
+               <div id="error2">An error occurred while uploading the file</div>
+               <div id="abort">The upload has been canceled by the user or the browser dropped the connection</div>
+               <div id="progress_info">
+                   <div id="progress"></div>
+                   <div id="progress_percent">&nbsp;</div>
+                   <div id="upload_response"></div>
+               </div>
+           </form>
+       </div>
+    </div>
 
 <script>
    var objs={{.TempObjs}};
