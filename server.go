@@ -155,6 +155,9 @@ func (srv *Server) uploadFile(w http.ResponseWriter, r *http.Request, params htt
 		wf, _ := os.OpenFile(filepath.Join("img", fileName), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(0744))
 		if _, err := io.Copy(wf, file); err == nil {
 			srv.Background = fileName
+			if srv.debug {
+				log.Printf("Background=%s\n", srv.Background)
+			}
 			go srv.Save()
 		} else {
 			log.Printf("%v", err)
