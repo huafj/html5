@@ -266,7 +266,6 @@ func main() {
 	router.ServeFiles("/img/*filepath", http.Dir("img"))
 	router.ServeFiles("/audio/*filepath", http.Dir("audio"))
 	router.ServeFiles("/js/*filepath", http.Dir("js"))
-	router.ServeFiles("/css/*filepath", http.Dir("css"))
 	router.GET("/", srv.getObjs)
 	router.GET("/firework", srv.cong)
 	router.GET("/upload", srv.uploadPage)
