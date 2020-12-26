@@ -182,8 +182,9 @@ func (srv *Server) uploadFile(w http.ResponseWriter, r *http.Request, params htt
 
 				cmd = exec.Command("ffmpeg", "-i", filepath.Join("audio", fileName),
 					"-vn", "-f", "mp3", filepath.Join("audio", id+".mp3"))
-
-				fmt.Printf("%v\n", cmd)
+				if srv.debug {
+					fmt.Printf("%v\n", cmd)
+				}
 				if out, err := cmd.Output(); err != nil {
 					log.Printf("%v %s", err, string(out))
 				}
