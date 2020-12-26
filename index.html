@@ -3,18 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Elsa</title>
-    <style>
-        body {
-            padding: 0;
-            margin: 0;
-            background-color: rgba(0, 0, 0, 0.1)
-        }
-        
-        canvas {
-            display: block;
-            margin: 200px auto;
-        }
-    </style>
 </head>
 <body>
 	<div id="options" style="position: absolute;top: 0px;left:201px;right:0;bottom:0;background:url('/img/{{.Background}}')">
@@ -50,7 +38,7 @@
     <br>
           <div class="container">
           <div class="upload_form_cont">
-              <form id="upload_form" enctype="multipart/form-data" method="post" action="uploadFile">
+              <form id="upload_form" enctype="multipart/form-data" method="post" action="upload">
                   <div>
                       <div><input type="file" name="image_file" id="image_file"  onchange="fileSelected();" /></div>                  </div>
                   <div>
@@ -117,17 +105,14 @@
        var oProgress = document.getElementById('progress');
        oProgress.style.display = 'block';
        oProgress.style.width = '0px';
-       // get form data for POSTing
-       //var vFD = document.getElementById('upload_form').getFormData(); // for FF3
        var vFD = new FormData(document.getElementById('upload_form'));
-       vFD.append("id",document.getElementById('taskId').value);
-       // create XMLHttpRequest object, adding few event listeners, and POSTing our data
+       vFD.append("id",document.getElementById('taskId').textContent);
        var oXHR = new XMLHttpRequest();
        oXHR.upload.addEventListener('progress', uploadProgress, false);
        oXHR.addEventListener('load', uploadFinish, false);
        oXHR.addEventListener('error', uploadError, false);
        oXHR.addEventListener('abort', uploadAbort, false);
-       oXHR.open('POST', 'uploadFile');
+       oXHR.open('POST', 'upload');
        oXHR.send(vFD);
    }
 
@@ -135,14 +120,12 @@
        if (e.lengthComputable) {
            iBytesUploaded = e.loaded;
            iBytesTotal = e.total;
-
            var iPercentComplete = Math.round(e.loaded * 100 / e.total);
            var iBytesTransfered = bytesToSize(iBytesUploaded);
            document.getElementById('progress_percent').innerHTML = iPercentComplete.toString() + '%';
            document.getElementById('progress').style.width = (iPercentComplete * 4).toString() + 'px';
            if (iPercentComplete == 100) {
                var oUploadResponse = document.getElementById('upload_response');
-               oUploadResponse.innerHTML = '<h1>Please wait...processing</h1>';
                oUploadResponse.style.display = 'block';
            }
        } else {
@@ -152,10 +135,12 @@
 
    function uploadFinish(e) { // upload successfully finished
        var oUploadResponse = document.getElementById('upload_response');
-       oUploadResponse.innerHTML = e.target.responseText;
        oUploadResponse.style.display = 'block';
        document.getElementById('progress_percent').innerHTML = '100%';
        document.getElementById('progress').style.width = '400px';
+       if(e.target.responseText){
+           location.reload();
+       }
     }
 
    function uploadError(e) { // upload error

@@ -130,12 +130,6 @@ func (srv *Server) cong(w http.ResponseWriter, r *http.Request, params httproute
 	srv.fwTmpl.Execute(w, sp)
 }
 
-func (srv *Server) uploadPage(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	w.Header().Add("Content-Type", "text/html;charset=utf-8")
-	data, _ := ioutil.ReadFile("upload.html")
-	fmt.Fprintf(w, string(data))
-}
-
 func (srv *Server) uploadFile(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	r.ParseMultipartForm(MaxFileSize)
 	file, handler, err := r.FormFile("image_file")
@@ -150,6 +144,7 @@ func (srv *Server) uploadFile(w http.ResponseWriter, r *http.Request, params htt
 			r.Body.Close()
 		}
 	}()
+
 	if srv.debug {
 		fmt.Printf("Uploaded File: %+v\n", handler.Filename)
 		fmt.Printf("File Size: %+v\n", handler.Size)
@@ -161,14 +156,11 @@ func (srv *Server) uploadFile(w http.ResponseWriter, r *http.Request, params htt
 		if _, err := io.Copy(wf, file); err == nil {
 			srv.Background = fileName
 			go srv.Save()
-			//cmd := exec.Command("ln", "-sf", fileName, "background.jpeg")
-			//cmd.Dir = filepath.Join(srv.workDir, "img")
-			//fmt.Printf("%v\n", cmd)
-			//cmd.Run()
 		} else {
 			log.Printf("%v", err)
 		}
 		wf.Close()
+		fmt.Fprintf(w, "/audio/%s", fileName)
 		return
 	}
 	if strings.HasSuffix(fileName, ".avi") ||
@@ -196,7 +188,6 @@ func (srv *Server) uploadFile(w http.ResponseWriter, r *http.Request, params htt
 		io.Copy(wf, file)
 		wf.Close()
 	}
-
 }
 
 func (srv *Server) Save() {
@@ -268,8 +259,6 @@ func main() {
 	router.ServeFiles("/js/*filepath", http.Dir("js"))
 	router.GET("/", srv.getObjs)
 	router.GET("/firework", srv.cong)
-	router.GET("/upload", srv.uploadPage)
-	router.POST("/uploadFile", srv.uploadFile)
-
+	router.POST("/upload", srv.uploadFile)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), router))
 }
