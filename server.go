@@ -96,10 +96,14 @@ func (srv *Server) deleteObj(w http.ResponseWriter, r *http.Request, params http
 	json.Unmarshal(body, &obj)
 	for i := range srv.Objs {
 		if srv.Objs[i].ID == obj.ID {
+			obj = srv.Objs[i]
 			if i == len(srv.Objs)-1 {
 				srv.Objs = srv.Objs[:i]
 			} else {
 				srv.Objs = append(srv.Objs[:i], srv.Objs[i+1:]...)
+			}
+			if obj.Days <= obj.Current {
+				srv.DoneObjs = append(srv.DoneObjs, obj)
 			}
 			go srv.Save()
 		}
