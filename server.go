@@ -10,10 +10,15 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
 )
+
+const MaxFileSize = (1 << 20) * 200
 
 type apiObj struct {
 	Days      int    `json:"days"`
@@ -32,9 +37,11 @@ type Server struct {
 	Objs        []apiObj  `json:"objs"`
 	DoneObjs    []apiObj  `json:"done,omitempty"`
 	TempObjs    []apiObj  `json:"-"`
+	Background  string    `json:"backgroud"`
 	htmlTmpl    *template.Template
 	fwTmpl      *template.Template
 	config      string
+	workDir     string
 	forceUpdate bool
 	debug       bool
 }
@@ -50,9 +57,7 @@ func (srv *Server) createObj(w http.ResponseWriter, r *http.Request, params http
 	srv.ID++
 	srv.Objs = append(srv.Objs, obj)
 	fmt.Fprintf(w, string(body))
-	go func() {
-		srv.Save()
-	}()
+	go srv.Save()
 }
 
 func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -79,9 +84,7 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 			srv.Objs[i].Days = obj.Days
 			srv.Objs[i].Gift = obj.Gift
 			fmt.Fprintf(w, string(body))
-			go func() {
-				srv.Save()
-			}()
+			go srv.Save()
 			break
 		}
 	}
@@ -98,9 +101,7 @@ func (srv *Server) deleteObj(w http.ResponseWriter, r *http.Request, params http
 			} else {
 				srv.Objs = append(srv.Objs[:i], srv.Objs[i+1:]...)
 			}
-			go func() {
-				srv.Save()
-			}()
+			go srv.Save()
 		}
 	}
 }
@@ -116,8 +117,7 @@ func (srv *Server) cong(w http.ResponseWriter, r *http.Request, params httproute
 		Path    string
 	}
 	sp := soundPath{}
-	id := params.ByName("id")
-	id = r.URL.Query().Get("id")
+	id := r.URL.Query().Get("id")
 	path := fmt.Sprintf("audio/%s.mp3", id)
 
 	if _, err := os.Stat(path); err == nil {
@@ -128,6 +128,75 @@ func (srv *Server) cong(w http.ResponseWriter, r *http.Request, params httproute
 
 	w.Header().Add("Content-Type", "text/html;charset=utf-8")
 	srv.fwTmpl.Execute(w, sp)
+}
+
+func (srv *Server) uploadPage(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	w.Header().Add("Content-Type", "text/html;charset=utf-8")
+	data, _ := ioutil.ReadFile("upload.html")
+	fmt.Fprintf(w, string(data))
+}
+
+func (srv *Server) uploadFile(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	r.ParseMultipartForm(MaxFileSize)
+	file, handler, err := r.FormFile("image_file")
+	id := r.FormValue("id")
+	if err != nil {
+		log.Printf("Error Retrieving the File %v", err)
+		return
+	}
+	defer func() {
+		file.Close()
+		if r.Body != nil {
+			r.Body.Close()
+		}
+	}()
+	if srv.debug {
+		fmt.Printf("Uploaded File: %+v\n", handler.Filename)
+		fmt.Printf("File Size: %+v\n", handler.Size)
+		fmt.Printf("MIME Header: %+v %s\n", handler.Header, id)
+	}
+	fileName := strings.ToLower(handler.Filename)
+	if strings.HasSuffix(fileName, ".jpg") || strings.HasSuffix(fileName, ".jpeg") {
+		wf, _ := os.OpenFile(filepath.Join("img", fileName), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(0744))
+		if _, err := io.Copy(wf, file); err == nil {
+			srv.Background = fileName
+			go srv.Save()
+			//cmd := exec.Command("ln", "-sf", fileName, "background.jpeg")
+			//cmd.Dir = filepath.Join(srv.workDir, "img")
+			//fmt.Printf("%v\n", cmd)
+			//cmd.Run()
+		} else {
+			log.Printf("%v", err)
+		}
+		wf.Close()
+		return
+	}
+	if strings.HasSuffix(fileName, ".avi") ||
+		strings.HasSuffix(fileName, ".mp4") ||
+		strings.HasSuffix(fileName, ".mov") {
+		wf, _ := os.OpenFile(filepath.Join("audio", fileName), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(0744))
+		if _, err := io.Copy(wf, file); err == nil {
+			wf.Close()
+			go func() {
+				cmd := exec.Command("ffmpeg", "-i", filepath.Join("audio", fileName),
+					"-vn", "-f", "mp3", filepath.Join("audio", id+".mp3"))
+
+				fmt.Printf("%v\n", cmd)
+				if out, err := cmd.Output(); err != nil {
+					log.Printf("%v %s", err, string(out))
+				}
+				cmd = exec.Command("rm", "-f", filepath.Join("audio", fileName))
+				cmd.Run()
+			}()
+		}
+		return
+	}
+	if strings.HasSuffix(fileName, ".mp3") {
+		wf, _ := os.OpenFile(filepath.Join("audio", id+".mp3"), os.O_CREATE|os.O_TRUNC|os.O_WRONLY, os.FileMode(0744))
+		io.Copy(wf, file)
+		wf.Close()
+	}
+
 }
 
 func (srv *Server) Save() {
@@ -186,7 +255,10 @@ func main() {
 			srv.Objs[i].AccDays += 1
 		}
 	}
-
+	srv.workDir, _ = os.Getwd()
+	if len(srv.Background) == 0 {
+		srv.Background = "frozen.jpeg"
+	}
 	router := httprouter.New()
 	router.POST("/api/update", srv.updateObj)
 	router.POST("/api/create", srv.createObj)
@@ -194,8 +266,11 @@ func main() {
 	router.ServeFiles("/img/*filepath", http.Dir("img"))
 	router.ServeFiles("/audio/*filepath", http.Dir("audio"))
 	router.ServeFiles("/js/*filepath", http.Dir("js"))
+	router.ServeFiles("/css/*filepath", http.Dir("css"))
 	router.GET("/", srv.getObjs)
 	router.GET("/firework", srv.cong)
+	router.GET("/upload", srv.uploadPage)
+	router.POST("/uploadFile", srv.uploadFile)
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), router))
 }
