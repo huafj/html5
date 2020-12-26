@@ -196,7 +196,7 @@ func (srv *Server) uploadFile(w http.ResponseWriter, r *http.Request, params htt
 func (srv *Server) Save() {
 	body, err := json.MarshalIndent(srv, "", " ")
 	if err == nil {
-		if w, err := os.OpenFile("config.json", os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(0744)); err == nil {
+		if w, err := os.OpenFile(srv.config, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(0744)); err == nil {
 			fmt.Fprintf(w, string(body))
 			w.Close()
 		} else {
@@ -227,7 +227,7 @@ func main() {
 	}
 
 	srv.fwTmpl = template.Must(template.New("firework").Parse(string(fwBody)))
-	body, _ := ioutil.ReadFile("config.json")
+	body, _ := ioutil.ReadFile(srv.config)
 	json.Unmarshal(body, srv)
 
 	canUpdate := false
