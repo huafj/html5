@@ -106,6 +106,7 @@ func (srv *Server) deleteObj(w http.ResponseWriter, r *http.Request, params http
 				srv.DoneObjs = append(srv.DoneObjs, obj)
 			}
 			go srv.Save()
+			break
 		}
 	}
 }

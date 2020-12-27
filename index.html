@@ -296,11 +296,7 @@
 					xmlhttp = new XMLHttpRequest();
 					xmlhttp.onreadystatechange = function() {
 							if (this.readyState == 4  && this.status == 200) {
-									let canvas = document.querySelector("#solar");
-									let ctx = canvas.getContext("2d");
-									let obj = JSON.parse(this.responseText);
-									objs.push(obj);
-									drawObj(ctx,obj,objs.length*offset);
+								  location.reload();
 							}
  		          reSet();
 					}
