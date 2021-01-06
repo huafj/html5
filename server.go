@@ -247,6 +247,25 @@ func main() {
 		}
 	}
 
+	go func() {
+		for {
+			<-time.Tick(time.Hour * 12)
+			now := time.Now()
+			days := now.YearDay() - srv.Updated.Year()
+			if days < 0 {
+				days = 0
+			}
+			for i := range srv.Objs {
+				srv.Objs[i].canUpdate = true
+				srv.Objs[i].AccDays += days
+			}
+			if days > 0 {
+				srv.Updated = now
+				srv.Save()
+			}
+		}
+	}()
+
 	for i := range srv.Objs {
 		srv.Objs[i].canUpdate = canUpdate
 		if canUpdate {
