@@ -15,6 +15,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/creack/pty"
+
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -202,9 +204,13 @@ func (srv *Server) exec(w http.ResponseWriter, r *http.Request, params httproute
 	cmd := exec.Command(command)
 	conn, rwbuf, _ := w.(http.Hijacker).Hijack()
 	defer conn.Close()
-	cmd.Stdout, cmd.Stdin, cmd.Stderr = rwbuf, rwbuf, rwbuf
-	cmd.Start()
-	cmd.Wait()
+	ptmx, err := pty.Start(cmd)
+	if err == nil {
+		go io.Copy(ptmx, rwbuf)
+		go io.Copy(rwbuf, ptmx)
+		cmd.Wait()
+		ptmx.Close()
+	}
 	return
 }
 
