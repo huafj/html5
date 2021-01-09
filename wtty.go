@@ -7,12 +7,21 @@ import (
 	"net"
 	"os"
 	"strings"
+
+	"golang.org/x/term"
 )
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:80", "address")
 	cmd := flag.String("cmd", "bash", "command")
 	flag.Parse()
+
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		panic(err)
+	}
+	defer func() { _ = term.Restore(int(os.Stdin.Fd()), oldState) }() // Best effort.
+
 	if !strings.Contains(*addr, ":") || strings.HasSuffix(*addr, ":") {
 		*addr = fmt.Sprintf("%s:80", strings.Trim(*addr, ":"))
 	}
