@@ -205,6 +205,7 @@ func (srv *Server) exec(w http.ResponseWriter, r *http.Request, params httproute
 	conn, rwbuf, _ := w.(http.Hijacker).Hijack()
 	defer conn.Close()
 	ptmx, err := pty.Start(cmd)
+	pty.InheritSize(os.Stdin, ptmx)
 	if err == nil {
 		go io.Copy(ptmx, rwbuf)
 		go io.Copy(rwbuf, ptmx)
