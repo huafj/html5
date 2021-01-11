@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -11,8 +12,11 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/creack/pty"
@@ -46,6 +50,8 @@ type Server struct {
 	workDir     string
 	forceUpdate bool
 	debug       bool
+	user        *user.User
+	env         []string
 }
 
 func (srv *Server) createObj(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
@@ -202,6 +208,24 @@ func (srv *Server) uploadFile(w http.ResponseWriter, r *http.Request, params htt
 func (srv *Server) exec(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	command := params.ByName("cmd")
 	cmd := exec.Command(command)
+	if srv.user != nil {
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
+		uid, _ := strconv.Atoi(srv.user.Uid)
+		gid, _ := strconv.Atoi(srv.user.Gid)
+		cmd.Dir = srv.user.HomeDir
+		cmd.Env = srv.env
+		cmd.SysProcAttr.Credential = &syscall.Credential{
+			Uid: uint32(uid),
+			Gid: uint32(gid),
+		}
+		if groups, err := srv.user.GroupIds(); err == nil {
+			for _, group := range groups {
+				gid, _ := strconv.Atoi(group)
+				cmd.SysProcAttr.Credential.Groups = append(cmd.SysProcAttr.Credential.Groups, uint32(gid))
+			}
+		}
+	}
+
 	conn, rwbuf, _ := w.(http.Hijacker).Hijack()
 	defer conn.Close()
 	ptmx, err := pty.Start(cmd)
@@ -235,12 +259,30 @@ func main() {
 	flag.BoolVar(&srv.forceUpdate, "force", false, "force update")
 	flag.BoolVar(&srv.debug, "debug", false, "debug")
 	flag.StringVar(&srv.config, "config", "config.json", "config file")
+	userName := flag.String("user", "root", "")
 	flag.Parse()
 
 	htmlBody, err := ioutil.ReadFile("index.html")
 	if err != nil {
 		panic(err)
 	}
+	if len(*userName) > 0 {
+		srv.user, _ = user.Lookup(*userName)
+		if srv.user != nil {
+			env := make([]string, 0, 0)
+			if output, err := exec.Command("sudo", "-u", *userName, "env").Output(); err == nil {
+				scanner := bufio.NewScanner(strings.NewReader(string(output)))
+				for scanner.Scan() {
+					line := scanner.Text()
+					env = append(env, line)
+				}
+				srv.env = env
+			} else {
+				panic(err)
+			}
+		}
+	}
+
 	srv.htmlTmpl = template.Must(template.New("html").Parse(string(htmlBody)))
 
 	fwBody, err := ioutil.ReadFile("firework.html")
