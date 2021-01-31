@@ -260,8 +260,9 @@ func main() {
 	flag.BoolVar(&srv.debug, "debug", false, "debug")
 	flag.StringVar(&srv.config, "config", "config.json", "config file")
 	userName := flag.String("user", "root", "")
+	workDir := filepath.Dir(os.Args[0])
 	flag.Parse()
-
+	os.Chdir(workDir)
 	htmlBody, err := ioutil.ReadFile("index.html")
 	if err != nil {
 		panic(err)
