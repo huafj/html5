@@ -83,6 +83,7 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 			case obj.Add == 0:
 				if title != obj.Title {
 					srv.Objs[i].Current = 0
+					srv.Objs[i].AccDays = 0
 					body, _ = json.MarshalIndent(srv.Objs[i], "", " ")
 				}
 			case srv.Objs[i].canUpdate || srv.forceUpdate:
