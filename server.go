@@ -58,10 +58,10 @@ func (srv *Server) createObj(w http.ResponseWriter, r *http.Request, params http
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	obj := apiObj{}
 	json.Unmarshal(body, &obj)
-	obj.ID = srv.ID + 1
 	obj.canUpdate = true
 	obj.Current = 0
 	obj.AccDays = 0
+	obj.ID = srv.ID + 1
 	srv.ID++
 	srv.Objs = append(srv.Objs, obj)
 	fmt.Fprintf(w, string(body))
@@ -74,10 +74,18 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 	if err := json.Unmarshal(body, &obj); err != nil {
 		log.Printf("update error %v\n", err)
 	}
+
 	for i := range srv.Objs {
 		if srv.Objs[i].ID == obj.ID {
+			title := srv.Objs[i].Title
 			srv.Objs[i].Title = obj.Title
-			if obj.Add != 0 && (srv.Objs[i].canUpdate || srv.forceUpdate) {
+			switch {
+			case obj.Add == 0:
+				if title != obj.Title {
+					srv.Objs[i].Current = 0
+					body, _ = json.MarshalIndent(srv.Objs[i], "", " ")
+				}
+			case srv.Objs[i].canUpdate || srv.forceUpdate:
 				if srv.debug {
 					log.Printf("udate %s obj=%v forcUpdate=%v\n", string(body), srv.Objs[i], srv.forceUpdate)
 				}
@@ -88,14 +96,14 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 				} else if srv.Objs[i].Current >= srv.Objs[i].Days {
 					srv.Objs[i].Current = srv.Objs[i].Days
 				}
+				srv.Objs[i].Days = obj.Days
+				srv.Objs[i].Gift = obj.Gift
 			}
-			srv.Objs[i].Days = obj.Days
-			srv.Objs[i].Gift = obj.Gift
 			fmt.Fprintf(w, string(body))
-			go srv.Save()
 			break
 		}
 	}
+	go srv.Save()
 }
 
 func (srv *Server) deleteObj(w http.ResponseWriter, r *http.Request, params httprouter.Params) {

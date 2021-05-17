@@ -180,13 +180,27 @@
 					};
 	}
 
-  function reSet(){
-			document.getElementById("task").value = "";
-			document.getElementById("days").value = "";
-			document.getElementById("gift").value = ""
-			document.getElementById("spent").value = ""
-			document.getElementById("rest").value = ""
-			document.getElementById("taskId").innerText = ""
+  function reSet(obj){
+      if (obj){
+			   document.getElementById("task").value = obj.title;
+			   document.getElementById("days").value = obj.days;
+			   document.getElementById("gift").value = obj.gift;
+         document.getElementById("rest").value = obj.days-obj.current;
+			   document.getElementById("taskId").innerText = obj.id;
+         for(let i=0;i < objs.length;i++){
+             if(objs[i].id == obj.id){
+                objSelected = i;
+                break;
+             }
+         }
+      }else{
+			   document.getElementById("task").value = "";
+			   document.getElementById("days").value = "";
+			   document.getElementById("gift").value = ""
+			   document.getElementById("spent").value = ""
+			   document.getElementById("rest").value = ""
+			   document.getElementById("taskId").innerText = ""
+      }
   }
   
 	function doMouseDown(event) {
@@ -241,7 +255,9 @@
 			let obj = objs[objSelected];
 			let selected = objSelected;
 			obj.days = document.getElementById("days").value-0;
-      obj.gift = document.getElementById("gift").value 
+      obj.gift = document.getElementById("gift").value;
+			obj.title = document.getElementById("task").value;
+      obj.add = 0;
 			let dbParam = JSON.stringify(obj);
       objSelected = -1;
       reSet();
@@ -308,7 +324,7 @@
   function draw(ctx,objs){
   		for(let i=0;i<objs.length;i++){
 						drawObj(ctx,objs[i],i*offset);
-				}
+			}
   }
 
 	async function sleep(seconds) {
@@ -322,7 +338,7 @@
 					val -= step;
 			}else{
       		ctx.fillStyle = "rgb(255,255,255)";
-					ctx.fillRect(x,targe+offY,w,step);
+					ctx.fillRect(x,target+offY,w,step);
 					target += step;
 			}
 
@@ -344,10 +360,13 @@
 						}
 						ctx.stroke();
 			  }
-			  if (obj.current+obj.add >= obj.days){
-						obj.add = 0;
+        obj.current += obj.add;
+                       obj.add = 0;
+			  if (obj.current >= obj.days){
 						window.location="/firework?id="+obj.id;
-				}
+			  }else{
+           reSet(obj);
+        }
 			}
 	}
 	
