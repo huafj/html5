@@ -56,6 +56,7 @@ func (srv *Server) createObj(w http.ResponseWriter, r *http.Request, params http
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	obj := apiObj{}
 	json.Unmarshal(body, &obj)
+	obj.Created = time.Now()
 	obj.Current = 0
 	obj.AccDays = 0
 	obj.ID = srv.ID + 1
@@ -125,6 +126,9 @@ func (srv *Server) deleteObj(w http.ResponseWriter, r *http.Request, params http
 }
 
 func (srv *Server) getObjs(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	for i := range srv.Objs {
+		srv.Objs[i].AccDays = int(time.Now().Sub(srv.Objs[i].Created).Hours()) / 24
+	}
 	srv.TempObjs = srv.Objs
 	srv.htmlTmpl.Execute(w, srv)
 }
@@ -301,10 +305,15 @@ func main() {
 	body, _ := ioutil.ReadFile(srv.config)
 	json.Unmarshal(body, srv)
 
+	save := false
 	for i := range srv.Objs {
 		if srv.Objs[i].Created.IsZero() {
 			srv.Objs[i].Created = time.Now().Local().AddDate(0, 0, -1)
+			save = true
 		}
+	}
+	if save {
+		srv.Save()
 	}
 	srv.workDir, _ = os.Getwd()
 	if fi, err := os.Stat(filepath.Join("img", srv.Background)); err != nil || !fi.Mode().IsRegular() || len(srv.Background) == 0 {
