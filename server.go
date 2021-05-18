@@ -77,6 +77,8 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 		if srv.Objs[i].ID == obj.ID {
 			title := srv.Objs[i].Title
 			srv.Objs[i].Title = obj.Title
+			srv.Objs[i].Gift = obj.Gift
+			srv.Objs[i].Days = obj.Days
 
 			switch {
 			case obj.Add == 0:
@@ -95,8 +97,6 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 				} else if srv.Objs[i].Current >= srv.Objs[i].Days {
 					srv.Objs[i].Current = srv.Objs[i].Days
 				}
-				srv.Objs[i].Days = obj.Days
-				srv.Objs[i].Gift = obj.Gift
 				srv.Objs[i].AccDays = int(time.Now().Sub(srv.Objs[i].Created).Hours()) / 24
 			}
 			body, _ = json.MarshalIndent(srv.Objs[i], "", " ")
