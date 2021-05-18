@@ -27,38 +27,35 @@ import (
 const MaxFileSize = (1 << 20) * 200
 
 type apiObj struct {
-	Days      int    `json:"days"`
-	AccDays   int    `json:"accDays"`
-	Current   int    `json:"current"`
-	Add       int    `json:"add,omitempty"`
-	Title     string `json:"title"`
-	Gift      string `json:"gift"`
-	ID        int    `json:"id"`
-	canUpdate bool
+	Days    int       `json:"days"`
+	AccDays int       `json:"accDays"`
+	Current int       `json:"current"`
+	Add     int       `json:"add,omitempty"`
+	Title   string    `json:"title"`
+	Gift    string    `json:"gift"`
+	ID      int       `json:"id"`
+	Created time.Time `json:"created,omitempty"`
 }
 
 type Server struct {
-	ID          int       `json:"id"`
-	Updated     time.Time `json:"updated"`
-	Objs        []apiObj  `json:"objs"`
-	DoneObjs    []apiObj  `json:"done,omitempty"`
-	TempObjs    []apiObj  `json:"-"`
-	Background  string    `json:"backgroud"`
-	htmlTmpl    *template.Template
-	fwTmpl      *template.Template
-	config      string
-	workDir     string
-	forceUpdate bool
-	debug       bool
-	user        *user.User
-	env         []string
+	ID         int      `json:"id"`
+	Objs       []apiObj `json:"objs"`
+	DoneObjs   []apiObj `json:"done,omitempty"`
+	TempObjs   []apiObj `json:"-"`
+	Background string   `json:"backgroud"`
+	htmlTmpl   *template.Template
+	fwTmpl     *template.Template
+	config     string
+	workDir    string
+	debug      bool
+	user       *user.User
+	env        []string
 }
 
 func (srv *Server) createObj(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	body, _ := ioutil.ReadAll(io.LimitReader(r.Body, 1048576))
 	obj := apiObj{}
 	json.Unmarshal(body, &obj)
-	obj.canUpdate = true
 	obj.Current = 0
 	obj.AccDays = 0
 	obj.ID = srv.ID + 1
@@ -79,18 +76,18 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 		if srv.Objs[i].ID == obj.ID {
 			title := srv.Objs[i].Title
 			srv.Objs[i].Title = obj.Title
+
 			switch {
 			case obj.Add == 0:
 				if title != obj.Title {
 					srv.Objs[i].Current = 0
 					srv.Objs[i].AccDays = 0
-					body, _ = json.MarshalIndent(srv.Objs[i], "", " ")
+					srv.Objs[i].Created = time.Now()
 				}
-			case srv.Objs[i].canUpdate || srv.forceUpdate:
+			default:
 				if srv.debug {
-					log.Printf("udate %s obj=%v forcUpdate=%v\n", string(body), srv.Objs[i], srv.forceUpdate)
+					log.Printf("udate %s obj=%v \n", string(body), srv.Objs[i])
 				}
-				srv.Objs[i].canUpdate = false
 				srv.Objs[i].Current += obj.Add
 				if srv.Objs[i].Current < 0 {
 					srv.Objs[i].Current = 0
@@ -99,7 +96,9 @@ func (srv *Server) updateObj(w http.ResponseWriter, r *http.Request, params http
 				}
 				srv.Objs[i].Days = obj.Days
 				srv.Objs[i].Gift = obj.Gift
+				srv.Objs[i].AccDays = int(time.Now().Sub(srv.Objs[i].Created).Hours()) / 24
 			}
+			body, _ = json.MarshalIndent(srv.Objs[i], "", " ")
 			fmt.Fprintf(w, string(body))
 			break
 		}
@@ -112,8 +111,7 @@ func (srv *Server) deleteObj(w http.ResponseWriter, r *http.Request, params http
 	obj := apiObj{}
 	json.Unmarshal(body, &obj)
 	for i := range srv.Objs {
-		if srv.Objs[i].ID == obj.ID &&
-			srv.Objs[i].Current >= srv.Objs[i].Days {
+		if srv.Objs[i].ID == obj.ID {
 			obj = srv.Objs[i]
 			if i == len(srv.Objs)-1 {
 				srv.Objs = srv.Objs[:i]
@@ -265,7 +263,6 @@ func (srv *Server) Save() {
 func main() {
 	srv := &Server{Objs: make([]apiObj, 0, 0)}
 	port := flag.Int("port", 80, "port")
-	flag.BoolVar(&srv.forceUpdate, "force", false, "force update")
 	flag.BoolVar(&srv.debug, "debug", false, "debug")
 	flag.StringVar(&srv.config, "config", "config.json", "config file")
 	userName := flag.String("user", "root", "")
@@ -304,42 +301,9 @@ func main() {
 	body, _ := ioutil.ReadFile(srv.config)
 	json.Unmarshal(body, srv)
 
-	canUpdate := false
-	if srv.Updated.IsZero() {
-		canUpdate = true
-		srv.Updated = time.Now()
-		srv.ID = 0
-	} else {
-		now := time.Now()
-		if now.Sub(srv.Updated).Hours() > 12.0 {
-			canUpdate = true
-			srv.Updated = now
-		}
-	}
-
-	go func() {
-		for {
-			<-time.Tick(time.Hour * 12)
-			now := time.Now()
-			days := now.YearDay() - srv.Updated.Year()
-			if days < 0 {
-				days = 0
-			}
-			for i := range srv.Objs {
-				srv.Objs[i].canUpdate = true
-				srv.Objs[i].AccDays += days
-			}
-			if days > 0 {
-				srv.Updated = now
-				srv.Save()
-			}
-		}
-	}()
-
 	for i := range srv.Objs {
-		srv.Objs[i].canUpdate = canUpdate
-		if canUpdate {
-			srv.Objs[i].AccDays += 1
+		if srv.Objs[i].Created.IsZero() {
+			srv.Objs[i].Created = time.Now().Local().AddDate(0, 0, -1)
 		}
 	}
 	srv.workDir, _ = os.Getwd()
