@@ -240,6 +240,7 @@
 							let ctx = canvas.getContext("2d");
 							let obj = JSON.parse(this.responseText);
 							objs[selected] = obj;
+              obj.add = val;
 							drawObj(ctx,obj,selected*offset);
 					}
 			}
